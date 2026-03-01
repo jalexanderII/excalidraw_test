@@ -9,6 +9,7 @@ import { measureText, newElement, newTextElement, wrapText } from "@excalidraw/e
 import { commonProps } from "./charts.constants";
 
 import type { ChartElements, SpreadsheetTable } from "./charts.types";
+import type { ExcalidrawTextElement, NonDeletedExcalidrawElement } from "@excalidraw/element/types";
 
 const CELL_PADDING_X = 12;
 const CELL_PADDING_Y = 8;
@@ -23,7 +24,7 @@ const clamp = (value: number, min: number, max: number) =>
 const getDisplayText = (
   text: string,
   fontString: ReturnType<typeof getFontString>,
-  lineHeight: number,
+  lineHeight: ExcalidrawTextElement["lineHeight"],
   maxTextWidth: number,
 ) => {
   const normalizedText = text.trim();
@@ -87,7 +88,7 @@ export const renderTable = (
     return Math.max(MIN_ROW_HEIGHT, rowHeight);
   });
 
-  const tableElements = [];
+  const tableElements: NonDeletedExcalidrawElement[] = [];
   let currentY = y;
   table.rows.forEach((row, rowIndex) => {
     let currentX = x;
