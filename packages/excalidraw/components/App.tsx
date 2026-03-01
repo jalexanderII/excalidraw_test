@@ -425,7 +425,7 @@ import { EraserTrail } from "../eraser";
 
 import { getShortcutKey } from "../shortcut";
 
-import { tryParseSpreadsheet } from "../charts";
+import { parseCSVTable, renderTable, tryParseSpreadsheet } from "../charts";
 
 import ConvertElementTypePopup, {
   getConversionTypeFromElements,
@@ -3554,6 +3554,18 @@ class App extends React.Component<AppProps, AppState> {
             data: result.data,
             rawText: data.text,
           },
+        });
+        return;
+      }
+
+      const tableCells = parseCSVTable(data.text);
+      if (tableCells) {
+        const elements = renderTable(tableCells, sceneX, sceneY);
+        this.addElementsFromPasteOrLibrary({
+          elements,
+          files: null,
+          position:
+            this.editorInterface.formFactor === "desktop" ? "cursor" : "center",
         });
         return;
       }
@@ -11501,6 +11513,35 @@ class App extends React.Component<AppProps, AppState> {
     if (imageFiles.length > 0 && this.isToolSupported("image")) {
       return this.insertImages(imageFiles, sceneX, sceneY);
     }
+
+    const csvFile = fileItems.find(
+      ({ file }) =>
+        file.type === "text/csv" ||
+        (typeof file.name === "string" &&
+          file.name.toLowerCase().endsWith(".csv")),
+    )?.file;
+    if (csvFile) {
+      const csvText =
+        typeof csvFile.text === "function"
+          ? await csvFile.text()
+          : await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.readAsText(csvFile, "utf8");
+              reader.onload = () => resolve((reader.result as string) || "");
+              reader.onerror = () => reject(reader.error);
+            });
+      const tableCells = parseCSVTable(csvText);
+      if (tableCells) {
+        const elements = renderTable(tableCells, sceneX, sceneY);
+        this.addElementsFromPasteOrLibrary({
+          elements,
+          position: event,
+          files: null,
+        });
+        return;
+      }
+    }
+
     const excalidrawLibrary_ids = dataTransferList.getData(
       MIME_TYPES.excalidrawlibIds,
     );

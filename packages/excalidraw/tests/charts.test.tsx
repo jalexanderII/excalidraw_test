@@ -1,4 +1,6 @@
-import { tryParseSpreadsheet } from "../charts";
+import { COLOR_PALETTE } from "@excalidraw/common";
+
+import { parseCSVTable, renderTable, tryParseSpreadsheet } from "../charts";
 
 describe("tryParseSpreadsheet", () => {
   it("works for numbers with comma in them", () => {
@@ -160,5 +162,80 @@ B\t20`,
         series: [{ title: "Value", values: [10, 20] }],
       },
     });
+  });
+});
+
+describe("parseCSVTable", () => {
+  it("parses non-numeric CSV content into a table grid", () => {
+    const csv = `id,name,email
+1,Alice,alice@example.com
+2,Bob,bob@example.com`;
+
+    expect(parseCSVTable(csv)).toEqual([
+      ["id", "name", "email"],
+      ["1", "Alice", "alice@example.com"],
+      ["2", "Bob", "bob@example.com"],
+    ]);
+  });
+
+  it("returns null when there are fewer than 2 columns", () => {
+    const csv = `name
+Alice
+Bob`;
+
+    expect(parseCSVTable(csv)).toBeNull();
+  });
+
+  it("acts as fallback when chart parsing rejects text columns", () => {
+    const csv = `id,name
+1,Alice
+2,Bob`;
+
+    expect(tryParseSpreadsheet(csv)).toEqual({
+      ok: false,
+      reason: "Value is not numeric",
+    });
+    expect(parseCSVTable(csv)).toEqual([
+      ["id", "name"],
+      ["1", "Alice"],
+      ["2", "Bob"],
+    ]);
+  });
+});
+
+describe("renderTable", () => {
+  it("renders grouped rectangle and text elements for each cell", () => {
+    const cells = parseCSVTable(`id,name
+1,Alice
+2,Bob`);
+    expect(cells).not.toBeNull();
+
+    const tableElements = renderTable(cells!, 120, 240);
+    expect(tableElements.length).toBe(cells!.length * cells![0].length * 2);
+
+    const groupIds = new Set(
+      tableElements
+        .map((element) => element.groupIds.at(-1))
+        .filter((groupId): groupId is string => Boolean(groupId)),
+    );
+    expect(groupIds.size).toBe(1);
+
+    const rectangleElements = tableElements.filter(
+      (element) => element.type === "rectangle",
+    );
+    const headerCellCount = cells![0].length;
+    const headerRectangles = rectangleElements.slice(0, headerCellCount);
+    const bodyRectangles = rectangleElements.slice(headerCellCount);
+
+    expect(
+      headerRectangles.every(
+        (rectangle) => rectangle.backgroundColor === COLOR_PALETTE.blue[1],
+      ),
+    ).toBe(true);
+    expect(
+      bodyRectangles.every(
+        (rectangle) => rectangle.backgroundColor === COLOR_PALETTE.transparent,
+      ),
+    ).toBe(true);
   });
 });

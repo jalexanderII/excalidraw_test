@@ -1,6 +1,10 @@
 import React from "react";
 
-import { EXPORT_DATA_TYPES, MIME_TYPES } from "@excalidraw/common";
+import {
+  COLOR_PALETTE,
+  EXPORT_DATA_TYPES,
+  MIME_TYPES,
+} from "@excalidraw/common";
 
 import type { ExcalidrawTextElement } from "@excalidraw/element/types";
 
@@ -84,5 +88,29 @@ describe("appState", () => {
     mouse.clickAt(100, 100);
 
     expect((h.elements[0] as ExcalidrawTextElement).fontSize).toBe(16);
+  });
+
+  it("drag&drop csv file inserts a visual table", async () => {
+    await render(
+      <Excalidraw autoFocus={true} handleKeyboardGlobally={true} />,
+      {},
+    );
+
+    const csvContent = await API.readFile("/workspace/demo.csv", "utf8");
+    const csvFile = new File([csvContent], "demo.csv", { type: "text/csv" });
+    await API.drop([{ kind: "file", file: csvFile }]);
+
+    await waitFor(() => {
+      const rectangleElements = h.elements.filter(
+        (element) => element.type === "rectangle",
+      );
+      const textElements = h.elements.filter(
+        (element) => element.type === "text",
+      );
+
+      expect(rectangleElements.length).toBeGreaterThan(0);
+      expect(textElements.length).toBeGreaterThan(0);
+      expect(rectangleElements[0].backgroundColor).toBe(COLOR_PALETTE.blue[1]);
+    });
   });
 });
