@@ -425,7 +425,7 @@ import { EraserTrail } from "../eraser";
 
 import { getShortcutKey } from "../shortcut";
 
-import { tryParseSpreadsheet } from "../charts";
+import { tryParseSpreadsheet, parseCSVTable, renderTable } from "../charts";
 
 import ConvertElementTypePopup, {
   getConversionTypeFromElements,
@@ -3554,6 +3554,19 @@ class App extends React.Component<AppProps, AppState> {
             data: result.data,
             rawText: data.text,
           },
+        });
+        return;
+      }
+
+      // ------------------- CSV table (non-numeric data) -------------------
+      const csvCells = parseCSVTable(data.text);
+      if (csvCells) {
+        const tableElements = renderTable(csvCells, sceneX, sceneY);
+        this.addElementsFromPasteOrLibrary({
+          elements: tableElements,
+          position:
+            this.editorInterface.formFactor === "desktop" ? "cursor" : "center",
+          files: null,
         });
         return;
       }
@@ -11501,6 +11514,30 @@ class App extends React.Component<AppProps, AppState> {
     if (imageFiles.length > 0 && this.isToolSupported("image")) {
       return this.insertImages(imageFiles, sceneX, sceneY);
     }
+
+    // ------------------- CSV table -------------------
+    const csvFile = fileItems
+      .map((data) => data.file)
+      .find(
+        (file) =>
+          file?.name.toLowerCase().endsWith(".csv") ||
+          file?.type === "text/csv",
+      );
+
+    if (csvFile) {
+      const text = await csvFile.text();
+      const csvCells = parseCSVTable(text);
+      if (csvCells) {
+        const tableElements = renderTable(csvCells, sceneX, sceneY);
+        this.addElementsFromPasteOrLibrary({
+          elements: tableElements,
+          position: event,
+          files: null,
+        });
+        return;
+      }
+    }
+
     const excalidrawLibrary_ids = dataTransferList.getData(
       MIME_TYPES.excalidrawlibIds,
     );

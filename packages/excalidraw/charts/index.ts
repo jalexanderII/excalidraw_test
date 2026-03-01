@@ -20,6 +20,7 @@ export {
 
 export { isSpreadsheetValidForChartType } from "./charts.helpers";
 export { tryParseCells, tryParseNumber, tryParseSpreadsheet };
+export { parseCSVTable, renderTable } from "./charts.table";
 
 export const renderSpreadsheet = (
   chartType: ChartType,
