@@ -368,6 +368,7 @@ import {
 } from "../scene";
 import { getStateForZoom } from "../scene/zoom";
 import {
+  blobToArrayBuffer,
   dataURLToString,
   generateIdFromFile,
   getDataURL,
@@ -425,7 +426,7 @@ import { EraserTrail } from "../eraser";
 
 import { getShortcutKey } from "../shortcut";
 
-import { tryParseSpreadsheet } from "../charts";
+import { renderTable, tryParseSpreadsheet, tryParseTable } from "../charts";
 
 import ConvertElementTypePopup, {
   getConversionTypeFromElements,
@@ -3543,15 +3544,26 @@ class App extends React.Component<AppProps, AppState> {
       return;
     }
 
-    // ------------------- Spreadsheet -------------------
+    // ------------------- Table / Spreadsheet -------------------
 
     if (!isPlainPaste && data.text) {
-      const result = tryParseSpreadsheet(data.text);
-      if (result.ok) {
+      const tableResult = tryParseTable(data.text);
+      if (tableResult.ok) {
+        this.addElementsFromPasteOrLibrary({
+          elements: renderTable(tableResult.data, 0, 0),
+          files: null,
+          position:
+            this.editorInterface.formFactor === "desktop" ? "cursor" : "center",
+        });
+        return;
+      }
+
+      const spreadsheetResult = tryParseSpreadsheet(data.text);
+      if (spreadsheetResult.ok) {
         this.setState({
           openDialog: {
             name: "charts",
-            data: result.data,
+            data: spreadsheetResult.data,
             rawText: data.text,
           },
         });
@@ -11501,6 +11513,29 @@ class App extends React.Component<AppProps, AppState> {
     if (imageFiles.length > 0 && this.isToolSupported("image")) {
       return this.insertImages(imageFiles, sceneX, sceneY);
     }
+
+    const tableFileItem = fileItems.find(
+      (item) => item.file && this.isTableFile(item.file),
+    );
+    if (tableFileItem?.file) {
+      try {
+        const tableText = new TextDecoder().decode(
+          await blobToArrayBuffer(tableFileItem.file),
+        );
+        const tableResult = tryParseTable(tableText);
+        if (tableResult.ok) {
+          this.addElementsFromPasteOrLibrary({
+            elements: renderTable(tableResult.data, 0, 0),
+            position: event,
+            files: null,
+          });
+          return;
+        }
+      } catch (error: any) {
+        console.error(error);
+      }
+    }
+
     const excalidrawLibrary_ids = dataTransferList.getData(
       MIME_TYPES.excalidrawlibIds,
     );
@@ -11574,6 +11609,21 @@ class App extends React.Component<AppProps, AppState> {
         }
       }
     }
+  };
+
+  private isTableFile = (file: File) => {
+    const fileType = (file.type || "").toLowerCase();
+    const fileName = ("name" in file && file.name ? file.name : "").toLowerCase();
+
+    return (
+      [
+        "text/csv",
+        "application/csv",
+        "text/tab-separated-values",
+        "text/tsv",
+        "application/vnd.ms-excel",
+      ].includes(fileType) || /\.(csv|tsv)$/i.test(fileName)
+    );
   };
 
   loadFileToCanvas = async (

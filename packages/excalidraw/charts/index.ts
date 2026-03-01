@@ -5,21 +5,26 @@ import { renderLineChart } from "./charts.line";
 import {
   tryParseCells,
   tryParseNumber,
+  tryParseTable,
   tryParseSpreadsheet,
 } from "./charts.parse";
 import { renderRadarChart } from "./charts.radar";
+import { renderTable } from "./charts.table";
 
 import type { ChartElements, Spreadsheet } from "./charts.types";
 
 export {
+  type ParseTableResult,
   type ParseSpreadsheetResult,
+  type SpreadsheetTable,
   type Spreadsheet,
   type SpreadsheetSeries,
   type ChartElements,
 } from "./charts.types";
 
 export { isSpreadsheetValidForChartType } from "./charts.helpers";
-export { tryParseCells, tryParseNumber, tryParseSpreadsheet };
+export { tryParseCells, tryParseNumber, tryParseSpreadsheet, tryParseTable };
+export { renderTable };
 
 export const renderSpreadsheet = (
   chartType: ChartType,

@@ -13,6 +13,14 @@ export interface SpreadsheetSeries {
   values: number[];
 }
 
+export interface SpreadsheetTable {
+  rows: string[][];
+}
+
 export type ParseSpreadsheetResult =
   | { ok: false; reason: string }
   | { ok: true; data: Spreadsheet };
+
+export type ParseTableResult =
+  | { ok: false; reason: string }
+  | { ok: true; data: SpreadsheetTable };
