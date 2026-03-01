@@ -210,6 +210,55 @@ describe("paste text as a single element", () => {
   });
 });
 
+describe("paste csv as table", () => {
+  it("auto-inserts a table for chart-valid csv", async () => {
+    pasteWithCtrlCmdV(
+      `Metric,Player A,Player B
+Speed,80,60
+Strength,65,85`,
+    );
+
+    await waitFor(() => {
+      expect(h.state.openDialog).toBe(null);
+      expect(h.elements.some((element) => element.type === "rectangle")).toBe(
+        true,
+      );
+      expect(h.elements.some((element) => element.type === "text")).toBe(true);
+    });
+  });
+
+  it("auto-inserts a table for non-chart csv", async () => {
+    pasteWithCtrlCmdV(
+      `Name,Role
+Alice,Engineer
+Bob,Designer`,
+    );
+
+    await waitFor(() => {
+      expect(h.elements.some((element) => element.type === "rectangle")).toBe(
+        true,
+      );
+      expect(h.elements.some((element) => element.type === "text")).toBe(true);
+    });
+  });
+
+  it("keeps plain paste behavior for csv text", async () => {
+    const csv = `Name,Role
+Alice,Engineer`;
+    pasteWithCtrlCmdShiftV(csv);
+
+    await waitFor(() => {
+      expect(h.elements).toEqual([
+        expect.objectContaining({
+          type: "text",
+          text: csv,
+          originalText: csv,
+        }),
+      ]);
+    });
+  });
+});
+
 describe("Paste bound text container", () => {
   const container = {
     type: "ellipse",

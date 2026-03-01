@@ -85,4 +85,30 @@ describe("appState", () => {
 
     expect((h.elements[0] as ExcalidrawTextElement).fontSize).toBe(16);
   });
+
+  it("drag&drop csv file auto-inserts a table", async () => {
+    await render(<Excalidraw />, {});
+
+    await API.drop([
+      {
+        kind: "file",
+        file: new File(
+          [
+            `Name,Role
+Alice,Engineer
+Bob,Designer`,
+          ],
+          "team.csv",
+          { type: "text/csv" },
+        ),
+      },
+    ]);
+
+    await waitFor(() => {
+      expect(h.elements.some((element) => element.type === "rectangle")).toBe(
+        true,
+      );
+      expect(h.elements.some((element) => element.type === "text")).toBe(true);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { type ParseSpreadsheetResult } from "./charts.types";
+import type { ParseSpreadsheetResult, ParseTableResult } from "./charts.types";
 
 /**
  * @private exported for testing
@@ -128,7 +128,7 @@ export const tryParseCells = (cells: string[][]): ParseSpreadsheetResult => {
   };
 };
 
-export const tryParseSpreadsheet = (text: string): ParseSpreadsheetResult => {
+const parseDelimitedText = (text: string) => {
   // Copy/paste from excel, spreadsheets, TSV, CSV, semicolon-separated.
   const parseDelimitedLines = (delimiter: "\t" | "," | ";") =>
     text
@@ -153,6 +153,38 @@ export const tryParseSpreadsheet = (text: string): ParseSpreadsheetResult => {
     candidates.find((c) => c.isConsistent && c.numCols > 1) ??
     candidates.find((c) => c.isConsistent) ??
     candidates[0];
+
+  return best;
+};
+
+export const tryParseTable = (text: string): ParseTableResult => {
+  const best = parseDelimitedText(text);
+  const rows = best.parsed;
+
+  if (rows.length === 0) {
+    return { ok: false, reason: "No values" };
+  }
+
+  const numCols = rows[0]?.length ?? 0;
+  if (!numCols || rows.some((row) => row.length !== numCols)) {
+    return {
+      ok: false,
+      reason: "All rows don't have same number of columns",
+    };
+  }
+
+  if (rows.length < 2 || numCols < 2) {
+    return {
+      ok: false,
+      reason: "Table must have at least 2 rows and 2 columns",
+    };
+  }
+
+  return { ok: true, data: { rows } };
+};
+
+export const tryParseSpreadsheet = (text: string): ParseSpreadsheetResult => {
+  const best = parseDelimitedText(text);
 
   const lines = best.parsed;
 

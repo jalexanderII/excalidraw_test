@@ -1,4 +1,4 @@
-import { tryParseSpreadsheet } from "../charts";
+import { renderTable, tryParseSpreadsheet, tryParseTable } from "../charts";
 
 describe("tryParseSpreadsheet", () => {
   it("works for numbers with comma in them", () => {
@@ -160,5 +160,88 @@ B\t20`,
         series: [{ title: "Value", values: [10, 20] }],
       },
     });
+  });
+});
+
+describe("tryParseTable", () => {
+  it("parses csv text into rows", () => {
+    const result = tryParseTable(
+      `Name,Role,Team
+Alice,Engineer,Editor
+Bob,Designer,Product`,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        rows: [
+          ["Name", "Role", "Team"],
+          ["Alice", "Engineer", "Editor"],
+          ["Bob", "Designer", "Product"],
+        ],
+      },
+    });
+  });
+
+  it("parses tsv text into rows", () => {
+    const result = tryParseTable(
+      `Name\tScore
+Alice\t10
+Bob\t12`,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        rows: [
+          ["Name", "Score"],
+          ["Alice", "10"],
+          ["Bob", "12"],
+        ],
+      },
+    });
+  });
+
+  it("rejects non-table text", () => {
+    const result = tryParseTable(`Just a sentence without delimiters`);
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "Table must have at least 2 rows and 2 columns",
+    });
+  });
+
+  it("rejects inconsistent rows", () => {
+    const result = tryParseTable(
+      `Name,Role
+Alice,Engineer
+Bob`,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "Table must have at least 2 rows and 2 columns",
+    });
+  });
+});
+
+describe("renderTable", () => {
+  it("renders rectangle and text elements for each cell", () => {
+    const elements = renderTable(
+      {
+        rows: [
+          ["Name", "Role"],
+          ["Alice", "Engineer"],
+        ],
+      },
+      0,
+      0,
+    );
+
+    expect(elements).toHaveLength(8);
+    expect(elements.filter((element) => element.type === "rectangle")).toHaveLength(
+      4,
+    );
+    expect(elements.filter((element) => element.type === "text")).toHaveLength(4);
   });
 });
